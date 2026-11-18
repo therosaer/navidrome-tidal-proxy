@@ -1,0 +1,11 @@
+venv/
+.venv/
+tests/
+local-navidrome/
+cache/
+*.env
+!.env.example
+tidal-session*.json
+*.log
+__pycache__/
+.git/

@@ -1,0 +1,19 @@
+# Secrets / local state: never publish
+.env
+*.env
+!.env.example
+tidal-session*.json
+credentials.env
+*.log
+cache/
+
+# Local test setup and tests (not published)
+local-navidrome/
+tests/
+.pytest_cache/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc

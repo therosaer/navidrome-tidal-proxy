@@ -1,0 +1,31 @@
+# Copy this file anywhere, adjust the marked lines, then:
+#   mkdir state                      # ownership is fixed automatically (PUID/PGID)
+#   docker compose run --rm -it navidrome-tidal-proxy python -m navidrome_tidal_proxy.login   # one-time Tidal login
+#   docker compose up -d
+services:
+  navidrome-tidal-proxy:
+    image: ghcr.io/therosaer/navidrome-tidal-proxy:latest
+    # build: .                   # or build it yourself from a clone of the repo
+    container_name: navidrome-tidal-proxy
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    # The container starts as root only to fix ownership of ./state, then drops to PUID:PGID before the app runs.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    pids_limit: 200
+    ports: ["4535:4535"]
+    environment:
+      PUID: "1000"                             # CHANGE: user id that owns your music folder (`id -u`); needed for save-to-library
+      PGID: "1000"                             # CHANGE: group id (`id -g`)
+      NAVIDROME_URL: http://navidrome:4533     # CHANGE: must be reachable from this container (see README)
+      TIDAL_MODE: merge
+      CACHE_MAX_GB: "4"
+      # TIDAL_USERS: alice,bob                 # restrict who may use your Tidal account
+      # LIBRARY_DIR: /music                    # opt-in save-to-library (see README)
+      # SAVE_ON_STAR: "1"
+    volumes:
+      - ./state:/state
+      # - /path/to/music:/music              # CHANGE if using save-to-library
