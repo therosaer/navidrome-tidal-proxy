@@ -22,8 +22,15 @@ def create_app():
         raise SystemExit(f"STREAM_MODE must be redirect or proxy (got {stream_mode!r})")
     if save_on_star and not library_dir:
         raise SystemExit("SAVE_ON_STAR=1 needs LIBRARY_DIR")
-    backend = TidalApiBackend(os.environ.get("TIDAL_SESSION_FILE", "./tidal-session-pkce.json"),
-                              os.environ.get("TIDAL_QUALITY", "hi_res_lossless"))
+    session_file = os.environ.get("TIDAL_SESSION_FILE", "./tidal-session-pkce.json")
+    try:
+        backend = TidalApiBackend(session_file, os.environ.get("TIDAL_QUALITY", "hi_res_lossless"))
+    except EOFError:  # tidalapi wanted to prompt for a login, but there is no terminal to answer it
+        raise SystemExit(
+            f"No valid Tidal login at {session_file}. Log in once, then start the proxy again:\n"
+            "  python -m navidrome_tidal_proxy.login\n"
+            "  Docker: docker compose run --rm -it navidrome-tidal-proxy python -m navidrome_tidal_proxy.login"
+        ) from None
     users = {u.strip() for u in os.environ.get("TIDAL_USERS", "").split(",") if u.strip()}
     return make_app(os.environ.get("NAVIDROME_URL", "http://localhost:4533"), backend,
                     mode=mode, stream_mode=stream_mode,

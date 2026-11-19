@@ -35,7 +35,8 @@ client ──> proxy :4535 ──> Navidrome :4533
 
 ## Requirements
 
-- Python 3.11+ and `ffmpeg` (or just Docker, which bundles both)
+- Python 3.11+ and `ffmpeg` (or just Docker, which bundles both). On Debian and Ubuntu, install the venv module too:
+  `sudo apt install python3-venv ffmpeg`
 - A running Navidrome and a Tidal subscription (HiFi/lossless tier for FLAC)
 
 ## Quick start (without Docker)
@@ -104,7 +105,7 @@ All settings are environment variables (see [`.env.example`](.env.example)).
 |---|---|---|
 | `NAVIDROME_URL` | `http://localhost:4533` | Where Navidrome lives |
 | `HOST` / `PORT` | `127.0.0.1` / `4534` | Listen address (the Docker image uses `0.0.0.0` / `4535`) |
-| `TIDAL_MODE` | `merge` | `merge`: always add Tidal results minus duplicates; `fallback`: only when Navidrome finds no songs; `off`: pure passthrough |
+| `TIDAL_MODE` | `merge` | `merge`: always add Tidal results minus duplicates; `fallback`: only when Navidrome finds no songs; `off`: pure passthrough (Tidal items are never added, but the proxy still signs in to Tidal at startup, so a saved login is required) |
 | `TIDAL_QUALITY` | `hi_res_lossless` | `low_96k`, `low_320k`, `high_lossless` or `hi_res_lossless` |
 | `TIDAL_SESSION_FILE` | `./tidal-session-pkce.json` | Saved Tidal login (a secret) |
 | `TIDAL_LIMIT` | `200` | Tidal hits fetched per search before de-duplication (max about 300) |
@@ -165,6 +166,9 @@ the FLAC to `LIBRARY_DIR/Tidal/<Artist>/<Album>/NN - Title.flac`, with tags and 
 
 Run the [doctor](#doctor) first; it finds most problems and says how to fix them.
 
+- **The proxy exits at startup with "No valid Tidal login" (or keeps restarting in Docker):** there is no saved Tidal
+  login yet, or it expired. Run the [Tidal login](#tidal-login) step once; in Docker it needs an interactive terminal
+  (`docker compose run --rm -it ...`), because it asks you to paste a URL.
 - **Requests hang, then time out (Docker):** the proxy cannot reach Navidrome. Use a shared Docker network and the container name.
 - **Streams are AAC 320 instead of FLAC:** you used the device-code login. Delete the session file and run `login` again.
 - **No Tidal results:** check `TIDAL_MODE` is not `off`, your user is in `TIDAL_USERS` if set, and the container log for
