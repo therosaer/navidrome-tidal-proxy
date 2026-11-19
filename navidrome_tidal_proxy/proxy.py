@@ -475,7 +475,7 @@ def make_app(navidrome_url: str, backend: Backend, *, mode: str = "merge", strea
                 return await redirect_or_proxy(res, request)
             if endpoint == "getCoverArt":
                 size = int(d["size"]) if d.get("size", "").isdigit() else None
-                # Proxy the bytes: some clients (e.g. dromify-omarchy's curl) refuse redirects.
+                # Proxy the bytes: some clients (e.g. curl-based ones) refuse redirects.
                 img = await asyncio.to_thread(backend.cover_url, tid, size)
                 async with httpx.AsyncClient(timeout=15, follow_redirects=True) as c:
                     r = await c.get(img)

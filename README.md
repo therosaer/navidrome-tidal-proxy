@@ -5,7 +5,7 @@
 > subscription, at your own risk, and check Tidal's terms of service (see [Disclaimer](#disclaimer)).
 
 A Subsonic-compatible proxy that sits in front of [Navidrome](https://www.navidrome.org). Your existing Subsonic clients
-(Symfonium, Feishin, Amperfy, DSub, dromify-omarchy, ...) point at the proxy instead of Navidrome and need no changes.
+(Symfonium, Feishin, Amperfy, DSub, ...) point at the proxy instead of Navidrome and need no changes.
 Everything is forwarded to Navidrome; the proxy adds your Tidal catalogue to searches, artist pages, favourites and
 playlists, and streams Tidal tracks (lossless FLAC) through the normal Subsonic API.
 
@@ -29,7 +29,8 @@ client ──> proxy :4535 ──> Navidrome :4533
 - **Album lists:** `newest` and `random` album lists get a few Tidal suggestions mixed in (never albums you own).
 - **Cover art:** Tidal covers get a small "T" badge so they are distinguishable from local music (can be disabled).
 - **Save to local library (opt-in):** starring a Tidal track also copies it into your Navidrome music folder, tagged,
-  and triggers a rescan. Tracks you already own are skipped.
+  and triggers a rescan. Tracks you already own are skipped. **Downloading from Tidal may violate its terms of
+  service; see [Save to local library](#save-to-local-library-opt-in).**
 - **Both JSON and XML** Subsonic responses, with or without the `.view` suffix.
 
 ## Requirements
@@ -60,8 +61,9 @@ The PKCE login matters: the plain device-code login is capped by Tidal at AAC 32
 
 ## Docker
 
-The image is Alpine-based (about 230 MB). A prebuilt multi-architecture image (amd64 and arm64) is published to GitHub Container Registry on every release, so
-there is nothing to build. Download [`docker-compose.yml`](docker-compose.yml) into an empty folder, set `NAVIDROME_URL`
+The image is Alpine-based (about 230 MB). A prebuilt multi-architecture image (amd64 and arm64) is published to
+GitHub Container Registry on every push to `main` (`:latest`) and on every version tag (`:1.2.3`), so there is nothing
+to build. Download [`docker-compose.yml`](docker-compose.yml) into an empty folder, set `NAVIDROME_URL`
 (and the music path if you use save-to-library), then:
 
 ```bash
@@ -77,8 +79,9 @@ user before the app runs, so the app itself never runs as root. The same ids are
 library, so they must be allowed to write there. `PUID=0` is refused.
 
 The compose file is otherwise hardened: read-only filesystem, all capabilities dropped except the few needed for that
-ownership fix, memory and process limits, and a health check on `/healthz`. Update later with `docker compose pull && docker compose up -d`. Prefer to build it yourself? Clone the
-repository and swap `image:` for `build: .`.
+ownership fix, memory and process limits, and a health check on `/healthz`. Update later with
+`docker compose pull && docker compose up -d`. Prefer to build it yourself? Clone the repository and swap `image:`
+for `build: .`.
 
 Put the proxy on the same Docker network as Navidrome and use its container name in `NAVIDROME_URL`
 (for example `http://navidrome:4533`). A container often cannot reach the *host's* published ports, which shows up as
@@ -166,6 +169,10 @@ Run the [doctor](#doctor) first; it finds most problems and says how to fix them
 - **Streams are AAC 320 instead of FLAC:** you used the device-code login. Delete the session file and run `login` again.
 - **No Tidal results:** check `TIDAL_MODE` is not `off`, your user is in `TIDAL_USERS` if set, and the container log for
   "Tidal search failed".
+- **`Could not save ...` with `Permission denied` in the log (save-to-library):** the app writes as `PUID:PGID`, not as
+  root, so `LIBRARY_DIR/Tidal` (and any artist folders already in it) must be owned by or writable for that user. Fix it
+  on the host, for example `sudo chown -R 1000:1000 /path/to/music/Tidal` (use your own `PUID`/`PGID`). Folders created
+  earlier by another user, such as root, are the usual cause.
 - **Covers or artists missing in a client:** some clients cache aggressively; clear that client's image cache.
 
 ## Disclaimer
